@@ -1,0 +1,29 @@
+Bootstrap: docker
+From: python:3.6
+
+%files
+    ../graph_AROMA*py /opt/graph_AROMA/
+    ../requirements.txt /opt/requirements.txt
+
+%post
+    apt-get update && apt-get install -y \
+    wget \
+    curl \
+    ca-certificates \
+    gnupg \
+    lsb-release 
+    pip3 install -r /opt/requirements.txt
+    cd /opt && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py && \
+    python3 fslinstaller.py -V 6.0.7.4 -d /usr/local/fsl && \
+    rm fslinstaller.py
+
+%environment
+    FSLDIR=/usr/local/fsl \
+    PATH=/usr/local/fsl/bin:/opt/graph_AROMA:$PATH \
+    FSLMULTIFILEQUIT=TRUE \
+    POSSUMDIR=/usr/local/fsl \
+    LD_LIBRARY_PATH=/usr/local/fsl/lib:$LD_LIBRARY_PATH \
+    FSLOUTPUTTYPE=NIFTI_GZ
+
+%runscript
+    exec python3 /opt/graph_AROMA/graph_AROMA.py "$@"
