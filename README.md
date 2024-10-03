@@ -2,6 +2,40 @@
 
 Causal-ICA-AROMA is a data-driven method designed to enhance [ICA-AROMA](https://github.com/maartenmennes/ICA-AROMA) in the identification and removal of motion-related independent components in fMRI data [1]. Causal-ICA-AROMA requires the output from ICA-AROMA as input. After ICA-AROMA is completed, Causal-ICA-AROMA identifies additional motion-related independent components that were not detected by ICA-AROMA. It achieves this by leveraging LiNGAM (Linear Non-Gaussian Acyclic Models) to learn a causal graph of the time courses of the spatially independent components of the fMRI data, obtained via Independent Component Analysis (ICA) [2]. Causal-ICA-AROMA then applies a simple criterion to reclassify motion components: any component that is strictly caused by ICA-AROMA-identified motion components is reclassified as a motion component.
 
+## CLI Usage
+
+```sh
+python graph_AROMA.py -o <output_directory> [options]
+```
+
+#### Required Arguments
+
+    -o, -out: Specify the output directory.
+
+#### Optional Arguments
+
+    --overwrite, --ow: Overwrite the existing output directory.
+    --cdAlgorithm: Causal discovery algorithm to use (default: LiNGAM). Choices: LiNGAM.
+    -c, --criteria: Selection criteria for noise components (default: pred). Choices: pred.
+    --fsldir: Path to the FSL directory (default: $FSLDIR/bin).
+    --group: Run in group mode.
+
+#### AROMA Arguments (for fmriprep + AROMA mode)
+
+    -i, -in: Input file.
+    -m, -mix: Input mixing matrix file.
+    -n, -noise: Input noise components file.
+    -j, -noise_json: Input noise components JSON file.
+    -t, -confound_tsv: Input confound TSV file.
+
+#### Example Command
+
+```sh
+python graph_AROMA.py -o /path/to/output --overwrite --cdAlgorithm LiNGAM -i /path/to/input_file -m /path/to/mix_file -n /path/to/noise_file -j /path/to/noise_json -t /path/to/confound_tsv
+```
+
+## Requirements
+
 This package requires Python, FSL, and the Causal Discover Toolbox (cdt) [3-4]. Make sure to first install all required Python packages: `python -m pip install -r requirements.txt`.
 
 It may also be helpful to take a look at the pages of the required tools listed below.
