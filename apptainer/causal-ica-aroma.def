@@ -1,9 +1,9 @@
 Bootstrap: docker
-From: python:3.6
+From: ubuntu:20.04
 
 %files
-    ../graph_AROMA*py /opt/graph_AROMA/
-    ../requirements.txt /opt/requirements.txt
+    ./graph_AROMA*py /opt/graph_AROMA/
+    ./requirements.txt /opt/requirements.txt
 
 %post
     apt-get update && apt-get install -y \
@@ -11,19 +11,77 @@ From: python:3.6
     curl \
     ca-certificates \
     gnupg \
-    lsb-release 
-    pip3 install -r /opt/requirements.txt
+    lsb-release \
+    libffi-dev \
+    libffi7 \
+    git
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh
+    bash /tmp/miniconda.sh -b -p /opt/miniconda
+    rm /tmp/miniconda.sh
+    /opt/miniconda/bin/conda init
+    /opt/miniconda/bin/conda create -y -n myenv python=3.6
+    /opt/miniconda/bin/conda install -y -n myenv -c conda-forge --file /opt/requirements.txt
+    /opt/miniconda/bin/conda install -y -n myenv scipy scikit-learn joblib tqdm statsmodels requests pip
+    /opt/miniconda/bin/conda install -y -n myenv -f libgfortran=3.0.0
+    . /opt/miniconda/etc/profile.d/conda.sh && \
+    conda activate myenv && \
+    pip3 install --target /opt/miniconda/envs/myenv/lib/python3.6/site-packages GPUtil cdt==0.5.23 numpy==1.14 torch && \
     cd /opt && wget https://fsl.fmrib.ox.ac.uk/fsldownloads/fslinstaller.py && \
-    python3 fslinstaller.py -V 6.0.7.4 -d /usr/local/fsl && \
+    python3.6 fslinstaller.py -V 6.0.6 -d /usr/local/fsl -m && \
     rm fslinstaller.py
+    apt-get -qq update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata
+    apt-get -qq install dialog apt-utils -y
+    apt-get install apt-transport-https -y
+    apt-get install -qq software-properties-common -y
+    apt-get -qq update
+    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+    add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu focal-cran40/' -y
+    apt-get -qq update && apt-get -qq install r-base -y
+    apt-get -qq install libssl-dev -y
+    apt-get -qq install libgmp3-dev  -y
+    apt-get -qq install build-essential -y
+    apt-get -qq install zip -y
+    apt-get -y install libcurl4-gnutls-dev
+    apt-get -qq install libfontconfig1-dev libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev -y
+    apt-get -qq install libxml2-dev -y
+    apt-get -qq install libv8-dev  -y
+    apt-get -qq install libcurl4-openssl-dev -y
+    apt-get -qq install libgsl-dev -y
+    apt-get -qq install -y r-cran-devtools \
+    r-cran-httr2 \
+    r-cran-sfsmisc \
+    r-cran-mass \
+    r-cran-clue \
+    r-cran-lattice \
+    r-cran-pkgdown \
+    r-cran-gh \
+    r-cran-v8 \
+    r-cran-profvis \
+    r-cran-foghorn 
+    Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/randomForest/randomForest_4.6-14.tar.gz", repos=NULL, type="source")'
+    Rscript -e 'install.packages("BiocManager")'
+    Rscript -e 'BiocManager::install(c("igraph"))'
+    Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/fastICA/fastICA_1.2-2.tar.gz", repos=NULL, type="source")'
+    Rscript -e 'install.packages(c("graph", "RBGL"), repos="http://cran.us.r-project.org", quiet=TRUE, verbose=FALSE)'
+    Rscript -e 'BiocManager::install(c("SID", "bnlearn", "pcalg", "kpcalg", "glmnet", "mboost"))'
+    Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/CAM/CAM_1.0.tar.gz", repos=NULL, type="source")'
+    Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/sparsebnUtils_0.0.8.tar.gz", repos=NULL, type="source")'
+    Rscript -e 'BiocManager::install(c("ccdrAlgorithm", "discretecdAlgorithm"))'
+    Rscript -e 'library(devtools); install_github("cran/CAM"); install_github("cran/momentchi2"); install_github("Diviyan-Kalainathan/RCIT", quiet=TRUE, verbose=FALSE)'
+    Rscript -e 'install.packages("https://cran.r-project.org/src/contrib/Archive/sparsebn/sparsebn_0.1.2.tar.gz", repos=NULL, type="source")'
+    echo ". /opt/miniconda/etc/profile.d/conda.sh" >> $APPTAINER_ENVIRONMENT
+    echo "conda activate myenv" >> $APPTAINER_ENVIRONMENT
+
 
 %environment
-    FSLDIR=/usr/local/fsl \
-    PATH=/usr/local/fsl/bin:/opt/graph_AROMA:$PATH \
-    FSLMULTIFILEQUIT=TRUE \
-    POSSUMDIR=/usr/local/fsl \
-    LD_LIBRARY_PATH=/usr/local/fsl/lib:$LD_LIBRARY_PATH \
-    FSLOUTPUTTYPE=NIFTI_GZ
+    export FSLDIR=/usr/local/fsl
+    export PATH=/usr/local/fsl/bin:/opt/graph_AROMA:$PATH
+    export FSLMULTIFILEQUIT=TRUE
+    export POSSUMDIR=/usr/local/fsl
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/fsl/lib
+    export FSLOUTPUTTYPE=NIFTI_GZ
+    export PYTHONPATH="/opt/miniconda/envs/myenv/lib/python3.6/site-packages:/usr/lib/x86_64-linux-gnu:/opt/graph_AROMA"
 
 %runscript
-    exec python3 /opt/graph_AROMA/graph_AROMA.py "$@"
+    . /opt/miniconda/etc/profile.d/conda.sh && conda activate myenv && exec python3.6 /opt/graph_AROMA/graph_AROMA.py "$@"
